@@ -5,11 +5,9 @@
 """
 
 # Standard library imports
-
-# Third party imports
 import numpy as np
 
-# Local application imports
+
 
 def calc_main_loudness(spec_third, field_type):
     """Calculate core loudness

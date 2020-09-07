@@ -10,7 +10,7 @@
 import numpy as np
 
 # Local application imports
-from mosqito.generic.oct3level import oct3level
+from mosqito.functions.oct3filter.oct3level import oct3level
 
 
 def oct3spec(sig, fs, fc_min=20, fc_max=20000, sig_type='stationary', dec_factor=24):
@@ -35,7 +35,7 @@ def oct3spec(sig, fs, fc_min=20, fc_max=20000, sig_type='stationary', dec_factor
         per third octave band or a matrix (dim [freq, time]) filtered 
         time signals per third octave band
     sig_type : str
-        Type of signal ('stationary' or 'time-varying'), influence the 
+        Type of signal ('stationary' or 'time-varying'), influences the 
         format of the output data corresponding respectively to a vector
         of overall rms values per third octave band or a matrix 
         (dim [freq, time]) filtered time signals per third octave band

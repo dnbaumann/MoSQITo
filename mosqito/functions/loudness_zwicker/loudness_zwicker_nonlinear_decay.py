@@ -7,10 +7,9 @@
 # Standard library imports
 import math
 
-# Third party imports
+# Third party import
 import numpy as np
 
-# Local application imports
 
 def calc_nl_loudness(core_loudness):
     """Simulate the nonlinear temporal decay of the hearing system

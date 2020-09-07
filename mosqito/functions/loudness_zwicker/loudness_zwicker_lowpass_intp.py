@@ -6,11 +6,8 @@
 
 # Standard library imports
 import math
-
-# Third party imports
 import numpy as np
 
-# Local application imports
 
 def loudness_zwicker_lowpass_intp(loudness, tau, sample_rate):
     """1st order low-pass with linear interpolation of signal for

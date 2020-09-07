@@ -36,7 +36,7 @@ def loudness_zwicker_stationary(spec_third, third_axis=[], field_type="free"):
     third_axis : numpy.ndarray
         Normalized center frequency of third octave bands [Hz]
     field_type : str
-        Type of soundfield correspondin to spec_third ("free" by 
+        Type of soundfield corresponding to spec_third ("free" by 
         default or "diffuse")
 
     Outputs
