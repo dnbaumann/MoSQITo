@@ -14,9 +14,9 @@ from mosqito.functions.loudness_zwicker.loudness_zwicker_shared import calc_main
 from mosqito.functions.loudness_zwicker.loudness_zwicker_shared import calc_slopes
 
 def loudness_zwicker_stationary(spec_third, third_axis=[], field_type="free"):
-    """Calculate Zwicker-loudness for stationary signals
+    """Zwicker-loudness calculation for stationary signals
 
-    Calculate the acoustic loudness according to Zwicker method for
+    Calculates the acoustic loudness according to Zwicker method for
     stationary signals.
     Normatice reference:
         ISO 532:1975 (method B)
@@ -25,7 +25,7 @@ def loudness_zwicker_stationary(spec_third, third_axis=[], field_type="free"):
     The code is based on BASIC program published in "Program for
     calculating loudness according to DIN 45631 (ISO 532B)", E.Zwicker
     and H.Fastl, J.A.S.J (E) 12, 1 (1991). 
-    Note that for reasons of normative continuity, as defined in the
+    Note that due to normative continuity, as defined in the
     preceeding standards, the method is in accordance with 
     ISO 226:1987 equal loudness contours (instead of ISO 226:2003)
 
@@ -81,12 +81,12 @@ def loudness_zwicker_stationary(spec_third, third_axis=[], field_type="free"):
         12500,
     ]
     if field_type != "diffuse" and field_type != "free":
-        raise ValueError("ERROR: field_type shall be either 'diffuse' or 'free'")
+        raise ValueError("ERROR: field_type should be either 'diffuse' or 'free'")
     if len(spec_third) != 28:
-        raise ValueError("ERROR: spec_third must contains 28 third octave bands values")
+        raise ValueError("ERROR: spectrum must contains 28 third octave bands values")
     if len(third_axis) == 0:
         third_axis = fr
-    elif (len(third_axis) == 28 and third_axis != fr) or len(third_axis) < 28:
+    elif (len(third_axis) == 28 and np.all(third_axis != fr)) or len(third_axis) < 28:
         raise ValueError(
             """ERROR: third_axis does not contains 1/3 oct between 25 and 
             12.5 kHz. Check the input parameters"""
@@ -109,8 +109,6 @@ def loudness_zwicker_stationary(spec_third, third_axis=[], field_type="free"):
     # Calculation of specific loudness pattern and integration of overall 
     # loudness by attaching slopes towards higher frequencies
     N, N_specific = calc_slopes(Nm)
-    #
-    # Bark axis
-    bark_axis = np.linspace(0.1, 24, int(24 / 0.1))
+   
 
-    return N, N_specific, bark_axis
+    return N, N_specific

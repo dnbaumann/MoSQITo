@@ -139,8 +139,9 @@ def calc_main_loudness(spec_third, field_type):
     s = 0.25
     nm = np.zeros(20)
     le = spec_third[8:]
-    le[0:3] = lcb
-    le -= a0
+    le = le.reshape((20))
+    le[0:3] = lcb    
+    le = le-a0
     if field_type == "diffuse":
         le += ddf
     i = le > ltq

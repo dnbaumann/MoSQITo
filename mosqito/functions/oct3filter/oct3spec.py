@@ -5,8 +5,6 @@
 """
 
 # Standard library imports
-
-# Third party imports
 import numpy as np
 
 # Local application imports
@@ -56,9 +54,7 @@ def oct3spec(sig, fs, fc_min=20, fc_max=20000, sig_type='stationary', dec_factor
 
     # Définition of the range of preferred filter center frequency
     fpref = np.array(
-        [
-            20,
-            25,
+        [   25,
             31.5,
             40,
             50,
@@ -85,15 +81,10 @@ def oct3spec(sig, fs, fc_min=20, fc_max=20000, sig_type='stationary', dec_factor
             6300,
             8000,
             10000,
-            12500,
-            16000,
-            20000,
-        ]
-    )
+            12500    ])
+    
     fexact = np.array(
-        [
-            20,
-            25.119,
+        [   25.119,
             31.623,
             39.811,
             50.119,
@@ -120,11 +111,9 @@ def oct3spec(sig, fs, fc_min=20, fc_max=20000, sig_type='stationary', dec_factor
             6309.6,
             7943,
             10000,
-            12589,
-            15849,
-            19953,
-        ]
-    )
+            12589    ])
+    
+    
     fexact = fexact[fpref >= fc_min]
     fpref = fpref[fpref >= fc_min]
     fexact = fexact[fpref <= fc_max]
