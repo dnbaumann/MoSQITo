@@ -104,8 +104,6 @@ class Audio_signal:
     def plot_time(self):
         """ Time signal wave plotting """
         
-        #freq
-        
         time = np.linspace(0, len(self.signal)/self.fs, num=len(self.signal))    
         plt.figure(1)
         plt.title("Signal Wave")
@@ -164,8 +162,10 @@ class Audio_signal:
         
         if self.signal_type == 'stationary':
             self.N, self.N_specific = loudness_zwicker_stationary(self.spec, self.freq, field_type)
+            print("Loudness:",str(self.N),"sones")
         elif self.signal_type == 'time_varying':
             self.N, self.N_specific = loudness_zwicker_time(self.spec, field_type)
+            
         
    
     def plot_loudness(self):
@@ -200,7 +200,7 @@ class Audio_signal:
 
  
 if __name__ == "__main__":
-     audio=Audio_signal('stationary',"MoSQITo_oo\mosqito\tests\test.wav")    
+     audio=Audio_signal('stationary',r"C:\Users\pc\Documents\Salomé\MoSQITo_oo\mosqito\tests\data\ISO_532-1\Test signal 2 (250 Hz 80 dB).wav")    
      audio.load_wav()
      audio.plot_time()
      audio.comp_third_oct()
