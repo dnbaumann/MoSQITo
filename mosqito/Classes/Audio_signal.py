@@ -63,7 +63,7 @@ class Audio_signal:
         self.N_specific = np.ndarray((1))
         
         
-    def load_wav(self, is_stationary, file ):
+    def load_wav(self, is_stationary, file, calib ):
         """ Load .wav signal and affects its sampling frequency and time signal values 
         
         Parameters
@@ -82,7 +82,6 @@ class Audio_signal:
         self.is_stationary = is_stationary
         self.file = file
         self.fs, self.signal = wavfile.read(self.file)
-        calib= 2 * 2**0.5
         if isinstance(self.signal[0], np.int16):
              self.signal = calib * self.signal / (2 ** 15 - 1)
         elif isinstance(self.signal[0], np.int32):
@@ -101,7 +100,7 @@ class Audio_signal:
         plt.plot(time, self.signal)
         plt.show()
 
-    def set_3oct(self, is_stationary, spec_third, third_axis):
+    def set_third_oct(self, spec_third, third_axis):
         """ Load a third-octave band spectrum and its corresponding 
             bands center frequencies. 
         
@@ -113,7 +112,7 @@ class Audio_signal:
                   Normalized center frequency of third octave bands [Hz]
          
         """
-        self.is_stationary = is_stationary
+        self.is_stationary = True
         if len(spec_third) != 28:
             raise ValueError("ERROR: spectrum must contains 28 third octave bands values")
         elif (len(third_axis) == 28 and np.all(third_axis != self.freq)) or len(third_axis) < 28:
@@ -214,14 +213,14 @@ if __name__ == "__main__":
             630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300,
             8000, 10000, 12500,  ] 
     audio = Audio_signal()         
-    audio.set_3oct(True, test_signal_1, fr)  
+    audio.set_third_oct(test_signal_1, fr)  
     audio.plot_freq()
     audio.comp_loudness()
     audio.plot_loudness()
 
 ## test : loudness calculation from a .wav file (steady signal)
 #      audio = Audio_signal()  
-#      audio.load_wav(True, "../mosqito\tests\data\ISO_532-1\Test signal 2 (250 Hz 80 dB).wav")
+#      audio.load_wav(True, "../mosqito\tests\data\ISO_532-1\Test signal 2 (250 Hz 80 dB).wav", calib = 2 * 2**0.5)
 #      audio.plot_time()
 #      audio.comp_third_oct()
 #      audio.plot_freq()
@@ -230,7 +229,7 @@ if __name__ == "__main__":
      
 ## test : loudness calculation from a .wav file (time_varying signal)   
 #       audio = Audio_signal()   
-#       audio.load_wav(False, r"C:/Users/Salomé/Documents/TN09/MoSQITo_oo/mosqito/tests/data/ISO_532-1/Annex B.5/Test signal 24 (woodpecker).wav")
+#       audio.load_wav(False, r"C:/Users/Salomé/Documents/TN09/MoSQITo_oo/mosqito/tests/data/ISO_532-1/Annex B.5/Test signal 24 (woodpecker).wav", calib = 2 * 2**0.5)
 #       audio.plot_time()
 #       audio.comp_third_oct()
 #       audio.comp_loudness()

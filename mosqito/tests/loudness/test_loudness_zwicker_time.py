@@ -3,8 +3,8 @@
 @date Created on Mon May 25 2020
 @author martin_g for Eomys
 """
-
-# Standard library imports
+import sys
+sys.path.append('../../..')
 
 # Third party imports
 import numpy as np
@@ -13,8 +13,8 @@ import pytest
 from pandas import ExcelFile, read_excel
 
 # Local application imports
-from mosqito.loudness.loudness_zwicker_time import loudness_zwicker_time
-from mosqito.generic.wav_to_oct3 import wav_to_oct3
+from mosqito.Classes.Audio_signal import Audio_signal
+
 
 @pytest.mark.loudness_zwtv  # to skip or run only loudness zwicker time-varying tests
 @pytest.mark.parametrize(
@@ -167,9 +167,9 @@ from mosqito.generic.wav_to_oct3 import wav_to_oct3
 
 @pytest.mark.loudness_zwtv  # to skip or run only loudness zwicker time-varying tests
 def test_loudness_zwicker_time(signal):
-    """Test function for the script loudness_zwicker_time
+    """Test function for the loudness calculation of a time-varying signal
 
-    Test function for the script loudness_zwicker_time with
+    Test function for the Audio_signal class "comp_loudness" method with
     .wav file as input. The input file is provided by ISO 532-1 annex 
     B4 and B5, the compliance is assessed according to section 6.1 of the 
     standard. One .png compliance plot is generated.
@@ -184,16 +184,21 @@ def test_loudness_zwicker_time(signal):
     """
     #
     # Load signal and compute third octave band spectrum
-    third_octave_levels, freq = wav_to_oct3(signal["data_file"], calib = 2 * 2**0.5, out_type='time_iso')
-    #
+    audio = Audio_signal()
+    audio.load_wav(False,signal["data_file"])
+    audio.comp_third_oct()
+ 
     # Compute Loudness
-    N, N_specific, bark_axis = loudness_zwicker_time(third_octave_levels, signal["field"])
+    audio.comp_loudness(signal["field"])  
+    N = audio.N
+    N_specific = audio.N_specific
+    bark_axis = np.linspace(0.1, 24, int(24 / 0.1))
     #
     # Check ISO 532-1 compliance
-    assert check_compliance(N, N_specific, bark_axis, signal)
+    assert check_compliance(N, N_specific, signal)
 
 
-def check_compliance(N, N_specific, bark_axis, iso_ref):
+def check_compliance(N, N_specific, iso_ref):
     """Check the comppiance of loudness calc. to ISO 532-1
 
     Check the compliance of the input data N and N_specific
