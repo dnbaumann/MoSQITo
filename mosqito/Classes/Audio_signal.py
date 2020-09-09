@@ -113,7 +113,7 @@ class Audio_signal:
                   Normalized center frequency of third octave bands [Hz]
          
         """
-        self.is_stationary == is_stationary
+        self.is_stationary = is_stationary
         if len(spec_third) != 28:
             raise ValueError("ERROR: spectrum must contains 28 third octave bands values")
         elif (len(third_axis) == 28 and np.all(third_axis != self.freq)) or len(third_axis) < 28:
@@ -189,7 +189,7 @@ class Audio_signal:
             ax.set_title('Specific loudness')
             secax = ax.secondary_xaxis('top', functions=(bark2freq, freq2bark))
             plt.setp(secax.get_xticklabels(), rotation=60, ha="right")
-            plt.setp(secax.set_xticks([0,100,200,300,400,510,630,770,920,1080,1270,1480,1720,2000,2320,2700,3150,3700,4400,5300,6400,7700,9500,12000,15500]))
+            secax.set_xticks(np.array([0,100,200,300,400,510,630,770,920,1080,1270,1480,1720,2000,2320,2700,3150,3700,4400,5300,6400,7700,9500,12000,15500]))
             secax.set_xlabel('Frequency')
             plt.show()
         elif self.is_stationary == False:
@@ -206,32 +206,32 @@ class Audio_signal:
 
  
 if __name__ == "__main__":
-    #test : loudness calculation from a third_octave band spectrum (steady signal)
+# test : loudness calculation from a third_octave band spectrum (steady signal)
     test_signal_1 = np.array([
     -60, -60, 78, 79, 89, 72, 80, 89, 75, 87, 85, 79, 86, 80, 71, 70, 72, 71,
     72, 74, 69, 65, 67, 77, 68, 58, 45, 30])
-     fr = [ 25, 31.5, 40, 50,63, 80,  100, 125,  160,200, 250, 315, 400, 500,
+    fr = [ 25, 31.5, 40, 50,63, 80,  100, 125,  160,200, 250, 315, 400, 500,
             630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300,
             8000, 10000, 12500,  ] 
-     audio=Audio_signal()         
-     audio.set_3oct(True, test_signal_1, fr)  
-     audio.plot_freq()
-     audio.comp_loudness()
-     audio.plot_loudness()
+    audio = Audio_signal()         
+    audio.set_3oct(True, test_signal_1, fr)  
+    audio.plot_freq()
+    audio.comp_loudness()
+    audio.plot_loudness()
 
-#test : loudness calculation from a .wav file (steady signal)
-     audio=Audio_signal()   
-     audio.load_wav(True, "../mosqito\tests\data\ISO_532-1\Test signal 2 (250 Hz 80 dB).wav")
-     audio.plot_time()
-     audio.comp_third_oct()
-     audio.plot_freq()
-     audio.comp_loudness()
-     audio.plot_loudness()
+## test : loudness calculation from a .wav file (steady signal)
+#      audio = Audio_signal()  
+#      audio.load_wav(True, "../mosqito\tests\data\ISO_532-1\Test signal 2 (250 Hz 80 dB).wav")
+#      audio.plot_time()
+#      audio.comp_third_oct()
+#      audio.plot_freq()
+#      audio.comp_loudness()
+#      audio.plot_loudness()
      
-#test : loudness calculation from a .wav file (time_varying signal)   
-     audio=Audio_signal()   
-     audio.load_wav(False, r"C:/Users/Salomé/Documents/TN09/MoSQITo_oo/mosqito/tests/data/ISO_532-1/Annex B.5/Test signal 24 (woodpecker).wav")
-     audio.plot_time()
-     audio.comp_third_oct()
-     audio.comp_loudness()
-     audio.plot_loudness()
+## test : loudness calculation from a .wav file (time_varying signal)   
+#       audio = Audio_signal()   
+#       audio.load_wav(False, r"C:/Users/Salomé/Documents/TN09/MoSQITo_oo/mosqito/tests/data/ISO_532-1/Annex B.5/Test signal 24 (woodpecker).wav")
+#       audio.plot_time()
+#       audio.comp_third_oct()
+#       audio.comp_loudness()
+#       audio.plot_loudness()
