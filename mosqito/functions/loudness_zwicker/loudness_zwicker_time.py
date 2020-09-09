@@ -6,8 +6,7 @@
 
 # Temporary for testing purpose
 import sys
-sys.path.append('D:/scripts/github/MoSQITo/')
-import matplotlib.pyplot as plt
+sys.path.append('../../..')
 from pandas import ExcelFile, read_excel
 
 # Standard library imports
