@@ -6,7 +6,6 @@ Created on Mon Sep  7 2020
 """
 import sys
 sys.path.append('../../..')
-import csv
 
 #Standard imports
 import numpy as np
@@ -195,60 +194,36 @@ def check_compliance(N, N_specific, iso_ref):
         ).all()
     )
     tst = tst_N and tst_specif
+       
     
-    # Generate compliance plot
+    # Define and plot the tolerance curves 
     bark_axis = np.linspace(0.1, 24, int(24 / 0.1))
-    plt.plot(bark_axis, N_specific, label="MoSQITo")
+    tol_curve_min = np.amin([N_specif_iso * 0.95, N_specif_iso - 0.1], axis=0)
+    tol_curve_min[tol_curve_min < 0] = 0
+    tol_curve_max = np.amax([N_specif_iso * 1.05, N_specif_iso + 0.1], axis=0)
+    plt.plot(bark_axis, tol_curve_min, color='red', linestyle = 'solid', label='5% tolerance', linewidth=1)  
+    plt.plot(bark_axis, tol_curve_max, color='red', linestyle = 'solid', label='', linewidth=1) 
+    plt.legend()
     
-    #Formating
-    tolerances = [ [0.9, 0.95, 1.05, 1.1], 
-                   [-0.2, -0.1, 0.1, 0.2] ]
-    style = ['solid', 'dashed', 'dashed', 'solid']
-    lab = ['10% tolerance', '5% tolerance', '', '']
-    clrs = ['red', 'orange', 'orange', 'red']
+    # Compliance plot
     
-    # Define the tolerance curves and build compliance matrix
-    comp = np.zeros((4,N_specific.size))
-    for i in np.arange(4):
-            if i in [0, 1]:
-                tol_curve = np.amin([N_specif_iso * tolerances[0][i], N_specif_iso + tolerances[1][i]], axis=0)
-                comp[i,:] = N >= tol_curve
-            else:
-                tol_curve = np.amax([N_specif_iso * tolerances[0][i], N_specif_iso + tolerances[1][i]], axis=0)
-                comp[i,:] = N <= tol_curve
-            tol_curve[tol_curve < 0] = 0
-            
-            # Plot tolerance curves
-            plt.plot(bark_axis, tol_curve, color=clrs[i], linestyle = style[i], label=lab[i], linewidth=1)    
-            plt.legend()
-# Check compliance
-    comp_10 = np.array([comp[0,i] and comp[3,i] for i in np.arange(N_specific.size)])
-    comp_5 = np.array([comp[1,i] and comp[2,i] for i in np.arange(N_specific.size)])
-    ind_10 = np.nonzero(comp_10 == 0)[0]
-    ind_5 = np.nonzero(comp_5 == 0)[0]
-    if ind_5.size == 0:
+    plt.plot(bark_axis, N_specific, label="MoSQITo")    
+    if tst_specif:
         plt.text(0.5, 0.5, 'Test passed (5% tolerance not exceeded)', horizontalalignment='center',
         verticalalignment='center', transform=plt.gca().transAxes,
         bbox=dict(facecolor='green', alpha=0.3))
-    elif ind_5.size / N.size <= 0.01: 
-        plt.text(0.5, 0.5, 'Test passed (5% tolerance exceeded in maximum 1% of time)', horizontalalignment='center',
-        verticalalignment='center', transform=plt.gca().transAxes,
-        bbox=dict(facecolor='orange', alpha=0.3), wrap=True)
     else:
         tst = 0
         plt.text(0.5, 0.5, 'Test not passed', horizontalalignment='center',
         verticalalignment='center', transform=plt.gca().transAxes, 
         bbox=dict(facecolor='red', alpha=0.3))
-  #
-# Highlights non-compliant area
-    for i in ind_10:
-        plt.axvspan(bark_axis[i]-0.001, bark_axis[i]+0.001, facecolor="red", alpha=0.3)
-    for i in ind_5:
-        if not i in ind_10:
-            plt.axvspan(bark_axis[i]-0.001, bark_axis[i]+0.001, facecolor="orange", alpha=0.3)
-               
- 
-    plt.title("N = " + str(N) + " sone (ISO ref. " + str(N_iso) + " sone)",)    
+                
+    if tst_N:
+        clr = "green"
+    else:
+        clr = "red"
+    plt.title("N = " + str(N) + " sone (ISO ref. " + str(N_iso) + " sone)", color=clr)
+    file_name = "_".join(iso_ref["data_file"].split(" "))   
     plt.xlabel("Critical band rate [Bark]")
     plt.ylabel("Specific loudness, [sone/Bark]")
     file_name = "_".join(iso_ref["data_file"].split(" "))
@@ -257,7 +232,6 @@ def check_compliance(N, N_specific, iso_ref):
         + file_name.split("/")[-1][:-4]
         + ".png",
         format="png",)
-    plt.show()
     plt.clf()
     return tst
 

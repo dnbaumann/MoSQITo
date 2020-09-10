@@ -3,6 +3,7 @@
 @date Created on Mon May 25 2020
 @author martin_g for Eomys
 """
+
 import sys
 sys.path.append('../../..')
 
@@ -185,14 +186,13 @@ def test_loudness_zwicker_time(signal):
     #
     # Load signal and compute third octave band spectrum
     audio = Audio_signal()
-    audio.load_wav(False,signal["data_file"])
+    audio.load_wav(False,signal["data_file"],calib = 2 * 2**0.5)
     audio.comp_third_oct()
  
     # Compute Loudness
     audio.comp_loudness(signal["field"])  
     N = audio.N
     N_specific = audio.N_specific
-    bark_axis = np.linspace(0.1, 24, int(24 / 0.1))
     #
     # Check ISO 532-1 compliance
     assert check_compliance(N, N_specific, signal)
@@ -278,6 +278,7 @@ def check_compliance(N, N_specific, iso_ref):
             time = time[1:]
         #
         # Generate compliance plot for loudness and specific loudness
+        bark_axis = np.linspace(0.1, 24, int(24 / 0.1))
         comp = np.zeros((4,N.size))
         if iso_ref["N_specif_bark"] != -1:
             #
