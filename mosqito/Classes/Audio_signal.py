@@ -18,6 +18,10 @@ from mosqito.functions.oct3filter.oct3spec import oct3spec
 from mosqito.functions.loudness_zwicker.loudness_zwicker_stationary import loudness_zwicker_stationary
 from mosqito.functions.loudness_zwicker.loudness_zwicker_time import loudness_zwicker_time
 from mosqito.functions.conversion_bark2frequency import (bark2freq, freq2bark)
+# from mosqito.functions.sharpness.sharpness_aures import calc_sharpness_aures
+# from mosqito.functions.sharpness.sharpness_din import calc_sharpness_din
+# from mosqito.functions.sharpness.sharpness_bismarck import calc_sharpness_bismarck
+from mosqito.functions.third_oct_2_dBA import A_weighting
 
 class Audio_signal:
     """ Audio signal to be analyzed """
@@ -30,6 +34,7 @@ class Audio_signal:
         self.signal = np.array((1,1),dtype=float)
         self.fs = int()         
         self.spec_third = np.ndarray((1,1))
+        self.sepc_dBA = np.ndarray((1,1))
         self.freq = np.array([
             25,
             31.5,
@@ -58,9 +63,14 @@ class Audio_signal:
             6300,
             8000,
             10000,
-            12500,  ] )
+            12500  ] )
         self.N = float()
         self.N_specific = np.ndarray((1))
+        self.S_aures = np.ndarray((1))
+        self.S_din = np.ndarray((1))
+        self.S_bismarck = np.ndarray((1))
+        self.R = float()
+        self.R_specific = np.ndarray((1))
         
         
     def load_wav(self, is_stationary, file, calib ):
@@ -92,7 +102,7 @@ class Audio_signal:
         """ Time signal wave plotting """
         
         time = np.linspace(0, len(self.signal)/self.fs, num=len(self.signal))    
-        plt.figure(1)
+        plt.figure()
         plt.title("Signal Wave")
         plt.ylabel("Amplitude")
         plt.xlabel("Time")
@@ -150,17 +160,36 @@ class Audio_signal:
         #TO DO : third-oct values calculation from a fine band spectrum
         
         
-    def plot_freq(self):
-        """Amplitudes related to frequencies plotting"""
+    def plot_freq(self,unit):
+        """Amplitudes related to frequencies plotting
         
-        plt.step(self.freq, self.spec_third)
-        plt.xscale('log')
-        plt.xlabel("Frequency [Hz]")
-        plt.ylabel("Amplitude, [dB re. 2.10^-5 Pa]")
-        plt.show()
+        Parameter:
+        --------------
+        unit : str()
+             'dB' or 'dBA'
+                               
+        """
+        plt.figure()
         
+        if unit =='dB':
+            plt.step(self.freq, self.spec_third)
+            plt.title('Third octave spectrum')
+            plt.xscale('log')
+            plt.xlabel("Frequency [Hz]")
+            plt.ylabel("Amplitude, [dB re. 2.10^-5 Pa]")
+            plt.show()
+        elif unit =='dBA':
+            self.spec_dBA = A_weighting(self.spec_third)
+            plt.step(self.freq, self.spec_dBA)
+            plt.xscale('log')
+            plt.title('A-weighted third-octave spectrum')
+            plt.xlabel('Frequency [Hz]')
+            plt.ylabel('Amplitude [dBA]')
+            plt.show()
         
-        
+
+       
+    
     def comp_loudness(self, field_type = 'free'):
         """  Acoustic loudness calculation according to Zwicker method for
         stationary and time-varying signals."""
@@ -178,7 +207,7 @@ class Audio_signal:
 
 
         if self.is_stationary == True:
-            plt.figure(1)                
+            plt.figure()                
             fig, ax = plt.subplots(constrained_layout=True)
             x = np.linspace(0.1, 24, int(24 / 0.1))   
             x = x.astype(float)
@@ -188,11 +217,11 @@ class Audio_signal:
             ax.set_title('Specific loudness')
             secax = ax.secondary_xaxis('top', functions=(bark2freq, freq2bark))
             plt.setp(secax.get_xticklabels(), rotation=60, ha="right")
-            secax.set_xticks(np.array([0,100,200,300,400,510,630,770,920,1080,1270,1480,1720,2000,2320,2700,3150,3700,4400,5300,6400,7700,9500,12000,15500]))
+            secax.set_xticks(np.array([25,50,100,200,400,800,1600,3150,6300,12500]))
             secax.set_xlabel('Frequency')
             plt.show()
         elif self.is_stationary == False:
-            plt.figure(2)                
+            plt.figure()                
             fig, ax = plt.subplots(constrained_layout=True)
             time = np.linspace(0,0.002*(self.N.size - 1),self.N.size)            
             plt.plot(time, self.N)
@@ -200,37 +229,76 @@ class Audio_signal:
             plt.ylabel("Loudness, [sone]")
             plt.title("Loudness over time")
             plt.show()
+            
+            
+            
+### Work in progress : sharpness implementation
 
+    # def comp_sharpness(self):
+    #     """ Acoustic sharpness calculation according to
+    #         different methods
+            
+            
+    #         Output
+    #         ------
+    #         S : float
+    #             sharpness value
+                       
+    #         """
+         
+    #     self.S_aures = calc_sharpness_aures(self.N, self.N_specific, self.is_stationary )              
+    #     self.S_din = calc_sharpness_din(self.N, self.N_specific, self.is_stationary)
+    #     self.S_bismarck = calc_sharpness_bismarck(self.N, self.N_specific, self.is_stationary)        
+        
+    # def plot_sharpness(self):
+    #     """ Sharpness plotting """
+
+    #     if self.is_stationary == False:
+    #         plt.figure()                
+    #         time = np.linspace(0,0.002*(self.N.size - 1),self.N.size)            
+    #         plt.plot(time, self.S_aures, label='Aures', color='blue')
+    #         plt.plot(time, self.S_din, label='DIN', color='red')
+    #         plt.plot(time, self.S_bismarck, label='Von Bismarck', color='orange')
+    #         plt.xlabel("Time [s]")
+    #         plt.ylabel("Sharpness, [acum]")
+    #         plt.title("Sharpness over time")
+    #         plt.legend()
+    #         plt.show()
 
 
  
 if __name__ == "__main__":
-# test : loudness calculation from a third_octave band spectrum (steady signal)
-    test_signal_1 = np.array([
-    -60, -60, 78, 79, 89, 72, 80, 89, 75, 87, 85, 79, 86, 80, 71, 70, 72, 71,
-    72, 74, 69, 65, 67, 77, 68, 58, 45, 30])
-    fr = [ 25, 31.5, 40, 50,63, 80,  100, 125,  160,200, 250, 315, 400, 500,
-            630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300,
-            8000, 10000, 12500,  ] 
-    audio = Audio_signal()         
-    audio.set_third_oct(test_signal_1, fr)  
-    audio.plot_freq()
-    audio.comp_loudness()
-    audio.plot_loudness()
-
-## test : loudness calculation from a .wav file (steady signal)
-#      audio = Audio_signal()  
-#      audio.load_wav(True, "../mosqito\tests\data\ISO_532-1\Test signal 2 (250 Hz 80 dB).wav", calib = 2 * 2**0.5)
-#      audio.plot_time()
-#      audio.comp_third_oct()
-#      audio.plot_freq()
-#      audio.comp_loudness()
-#      audio.plot_loudness()
-     
-## test : loudness calculation from a .wav file (time_varying signal)   
-#       audio = Audio_signal()   
-#       audio.load_wav(False, r"C:/Users/Salomé/Documents/TN09/MoSQITo_oo/mosqito/tests/data/ISO_532-1/Annex B.5/Test signal 24 (woodpecker).wav", calib = 2 * 2**0.5)
-#       audio.plot_time()
-#       audio.comp_third_oct()
+# ##test : loudness calculation from a third_octave band spectrum (steady signal)
+#       test_signal_1 = np.array([
+#     -60, -60, 78, 79, 89, 72, 80, 89, 75, 87, 85, 79, 86, 80, 71, 70, 72, 71,
+#     72, 74, 69, 65, 67, 77, 68, 58, 45, 30])
+#       fr = [ 25, 31.5, 40, 50,63, 80,  100, 125,  160,200, 250, 315, 400, 500,
+#             630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300,
+#             8000, 10000, 12500,  ] 
+#       audio = Audio_signal()         
+#       audio.set_third_oct(test_signal_1, fr)  
+#       audio.plot_freq('dBA')
 #       audio.comp_loudness()
 #       audio.plot_loudness()
+
+# # test : loudness calculation from a .wav file (steady signal)
+#     audio = Audio_signal()  
+#     audio.load_wav(True, r"C:\Users\pc\Documents\Salomé\MoSQITo_oo\mosqito\tests\data\ISO_532-1\Test signal 2 (250 Hz 80 dB).wav", calib = 2 * 2**0.5)
+#     audio.plot_time()
+#     audio.comp_third_oct()
+#     audio.plot_freq('dBA')
+#     audio.comp_loudness()
+#     audio.plot_loudness()
+      
+     
+# #test : loudness calculation from a .wav file (time_varying signal)   
+#         audio = Audio_signal()   
+#         audio.load_wav(False, "mosqito\tests\data\ISO_532-1\Annex B.5\Test signal 17 (machine gun).wav", calib = 2 * 2**0.5)
+#         #audio.plot_time()
+#         audio.comp_third_oct()
+#         audio.comp_loudness()
+#         audio.plot_loudness()
+            
+#         audio.comp_sharpness()
+#         audio.plot_sharpness()
+ 
