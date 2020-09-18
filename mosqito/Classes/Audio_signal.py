@@ -18,10 +18,12 @@ from mosqito.functions.oct3filter.oct3spec import oct3spec
 from mosqito.functions.loudness_zwicker.loudness_zwicker_stationary import loudness_zwicker_stationary
 from mosqito.functions.loudness_zwicker.loudness_zwicker_time import loudness_zwicker_time
 from mosqito.functions.conversion_bark2frequency import (bark2freq, freq2bark)
+from mosqito.functions.third_oct_2_dBA import A_weighting
+from mosqito.functions.resampling import signal_resample
 # from mosqito.functions.sharpness.sharpness_aures import calc_sharpness_aures
 # from mosqito.functions.sharpness.sharpness_din import calc_sharpness_din
 # from mosqito.functions.sharpness.sharpness_bismarck import calc_sharpness_bismarck
-from mosqito.functions.third_oct_2_dBA import A_weighting
+
 
 class Audio_signal:
     """ Audio signal to be analyzed """
@@ -92,6 +94,8 @@ class Audio_signal:
         self.is_stationary = is_stationary
         self.file = file
         self.fs, self.signal = wavfile.read(self.file)
+        if self.fs != 48000:
+            self.fs, self.signal = signal_resample(self.signal)
         if isinstance(self.signal[0], np.int16):
              self.signal = calib * self.signal / (2 ** 15 - 1)
         elif isinstance(self.signal[0], np.int32):
@@ -291,14 +295,11 @@ if __name__ == "__main__":
 #     audio.plot_loudness()
       
      
-# #test : loudness calculation from a .wav file (time_varying signal)   
+# # #test : loudness calculation from a .wav file (time_varying signal)   
 #         audio = Audio_signal()   
-#         audio.load_wav(False, "mosqito\tests\data\ISO_532-1\Annex B.5\Test signal 17 (machine gun).wav", calib = 2 * 2**0.5)
+#         audio.load_wav(False,"mosqito\tests\data\ISO_532-1\Annex B.5\Test signal 17 (machine gun).wav", calib = 2 * 2**0.5)
 #         #audio.plot_time()
 #         audio.comp_third_oct()
 #         audio.comp_loudness()
 #         audio.plot_loudness()
-            
-#         audio.comp_sharpness()
-#         audio.plot_sharpness()
- 
+  

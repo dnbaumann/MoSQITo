@@ -45,8 +45,6 @@ def loudness_zwicker_stationary(spec_third, third_axis=[], field_type="free"):
         Calculated loudness [sones]
     N_specific : numpy.ndarray
         Specific loudness [sones/bark]
-    bark_axis : numpy.ndarray
-        Corresponding bark axis
     """
     #
     # Input parameters control and formating
