@@ -13,13 +13,14 @@ from scipy.io import wavfile
 import matplotlib.pyplot as plt
 
 #local applications imports
+from mosqito.functions.uff_loader import uff_loader
+from mosqito.functions.third_oct_2_dBA import A_weighting
+from mosqito.functions.resampling import signal_resample
 from mosqito.functions.oct3filter.calc_third_octave_levels import calc_third_octave_levels
 from mosqito.functions.oct3filter.oct3spec import oct3spec
 from mosqito.functions.loudness_zwicker.loudness_zwicker_stationary import loudness_zwicker_stationary
 from mosqito.functions.loudness_zwicker.loudness_zwicker_time import loudness_zwicker_time
 from mosqito.functions.conversion_bark2frequency import (bark2freq, freq2bark)
-from mosqito.functions.third_oct_2_dBA import A_weighting
-from mosqito.functions.resampling import signal_resample
 # from mosqito.functions.sharpness.sharpness_aures import calc_sharpness_aures
 # from mosqito.functions.sharpness.sharpness_din import calc_sharpness_din
 # from mosqito.functions.sharpness.sharpness_bismarck import calc_sharpness_bismarck
@@ -94,19 +95,37 @@ class Audio_signal:
         self.is_stationary = is_stationary
         self.file = file
         self.fs, self.signal = wavfile.read(self.file)
-        if self.fs != 48000:
-            self.fs, self.signal = signal_resample(self.signal)
         if isinstance(self.signal[0], np.int16):
              self.signal = calib * self.signal / (2 ** 15 - 1)
         elif isinstance(self.signal[0], np.int32):
              self.signal = calib * self.signal / (2 ** 31 - 1)
-             
+    
+    def load_uff(self, is_stationary, file):
+        """ Load .uff signal and affects its sampling frequency and time signal values 
+        
+        Parameters
+        ----------
+        file : string path to the signal file
+        is_stationary : boolean 
+                 True if the signal is stationary, False if it is time-varying
+        calib : float calibration factor for the signal to be in [pa]
+
+        Outputs
+        -------
+        signal : time signal values
+        fs : sampling frequency        
+        """ 
+        
+        self.is_stationary = is_stationary
+        self.file = file
+        self.fs, self.signal = uff_loader(self.file)        
+
                    
     def plot_time(self):
         """ Time signal wave plotting """
         
-        time = np.linspace(0, len(self.signal)/self.fs, num=len(self.signal))    
         plt.figure()
+        time = np.linspace(0, len(self.signal)/self.fs, num=len(self.signal))    
         plt.title("Signal Wave")
         plt.ylabel("Amplitude")
         plt.xlabel("Time")
@@ -151,6 +170,8 @@ class Audio_signal:
         if self.is_stationary == True:
             self.spec_third, self.freq = oct3spec(self.signal, self.fs)
         elif self.is_stationary == False:
+            if self.fs != 48000:
+                self.fs, self.signal = signal_resample(self.signal,self.fs)
             self.spec_third = calc_third_octave_levels(self.signal,self.fs)
                    
             
@@ -201,7 +222,7 @@ class Audio_signal:
         if self.is_stationary == True:
             self.N, self.N_specific = loudness_zwicker_stationary(self.spec_third, self.freq, field_type)
             print("Loudness:",str(self.N),"sones")
-        elif self.is_stationary == False:
+        elif self.is_stationary == False: 
             self.N, self.N_specific = loudness_zwicker_time(self.spec_third, field_type)
             
         
@@ -209,9 +230,8 @@ class Audio_signal:
     def plot_loudness(self):
         """ Specific band loudness plotting  """
 
-
-        if self.is_stationary == True:
-            plt.figure()                
+        plt.figure()
+        if self.is_stationary == True:                            
             fig, ax = plt.subplots(constrained_layout=True)
             x = np.linspace(0.1, 24, int(24 / 0.1))   
             x = x.astype(float)
@@ -224,8 +244,7 @@ class Audio_signal:
             secax.set_xticks(np.array([25,50,100,200,400,800,1600,3150,6300,12500]))
             secax.set_xlabel('Frequency')
             plt.show()
-        elif self.is_stationary == False:
-            plt.figure()                
+        elif self.is_stationary == False:               
             fig, ax = plt.subplots(constrained_layout=True)
             time = np.linspace(0,0.002*(self.N.size - 1),self.N.size)            
             plt.plot(time, self.N)
@@ -271,7 +290,7 @@ class Audio_signal:
 
 
  
-if __name__ == "__main__":
+# if __name__ == "__main__":
 # ##test : loudness calculation from a third_octave band spectrum (steady signal)
 #       test_signal_1 = np.array([
 #     -60, -60, 78, 79, 89, 72, 80, 89, 75, 87, 85, 79, 86, 80, 71, 70, 72, 71,
@@ -285,9 +304,9 @@ if __name__ == "__main__":
 #       audio.comp_loudness()
 #       audio.plot_loudness()
 
-# # test : loudness calculation from a .wav file (steady signal)
+# # # test : loudness calculation from a .wav file (steady signal)
 #     audio = Audio_signal()  
-#     audio.load_wav(True, r"C:\Users\pc\Documents\Salomé\MoSQITo_oo\mosqito\tests\data\ISO_532-1\Test signal 2 (250 Hz 80 dB).wav", calib = 2 * 2**0.5)
+#     audio.load_wav(True, "mosqito\tests\data\ISO_532-1\Test signal 2 (250 Hz 80 dB).wav", calib = 2 * 2**0.5)
 #     audio.plot_time()
 #     audio.comp_third_oct()
 #     audio.plot_freq('dBA')
@@ -296,10 +315,10 @@ if __name__ == "__main__":
       
      
 # # #test : loudness calculation from a .wav file (time_varying signal)   
-#         audio = Audio_signal()   
-#         audio.load_wav(False,"mosqito\tests\data\ISO_532-1\Annex B.5\Test signal 17 (machine gun).wav", calib = 2 * 2**0.5)
-#         #audio.plot_time()
-#         audio.comp_third_oct()
-#         audio.comp_loudness()
-#         audio.plot_loudness()
-  
+# audio = Audio_signal()   
+# audio.load_uff(False, "mosqito\tests\data\ISO_532-1\Annex B.5\Test signal 17 (machine gun).wav")
+# audio.plot_time()
+# audio.comp_third_oct()
+# audio.comp_loudness()
+# audio.plot_loudness()
+
