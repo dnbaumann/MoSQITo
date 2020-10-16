@@ -9,6 +9,7 @@ sys.path.append('../..')
 
 #standard library imports
 import numpy as np
+from numpy.fft import fft
 from scipy.io import wavfile
 import matplotlib.pyplot as plt
 
@@ -38,7 +39,8 @@ class Audio_signal:
         self.file = str()
         self.is_stationary = bool()
         self.signal = np.array((1,1),dtype=float)
-        self.fs = int()         
+        self.fs = int()      
+        self.spec = np.ndarray((1,1))
         self.spec_third = np.ndarray((1,1))
         self.sepc_dBA = np.ndarray((1,1))
         self.freq = np.array([
@@ -107,14 +109,41 @@ class Audio_signal:
     def plot_signal(self):
         """ Time signal wave plot """
         
-        plt.figure()
+        plt.figure(num='Signal wave')
         time = np.linspace(0, len(self.signal)/self.fs, num=len(self.signal))    
-        plt.title("Signal Wave")
+        plt.title("Signal Wave",fontsize=16)
         plt.ylabel("Amplitude")
         plt.xlabel("Time")
         plt.ylim( min(self.signal), max(self.signal))
         plt.plot(time, self.signal,color='cadetblue')
         plt.show()
+        
+    
+    def plot_spectrum(self,start,stop):
+        """ Signal spectrum calculated in the given time frame with Blackman window
+        
+        Parameters
+        ----------
+        start : integer
+               when to start computing spectrum in s
+        stop : integer
+              when to stop computing spectrum in s   
+        """
+        data = self.signal[int(start*self.fs):int(stop*self.fs)]
+        N = data.size
+        fourier = fft(data*np.blackman(N))
+        self.spec = np.absolute(fourier/N)[0:int(N/2)]
+        self.spec = 20 * np.log10(self.spec/0.00002)
+        freq = np.arange(self.spec.size)*1.0/self.spec.size*self.fs 
+        
+        plt.figure(figsize=(12,4),num='Spectrum')
+        plt.vlines(freq,[0],self.spec,color='cadetblue')
+        plt.xlabel('Frequency [Hz]')
+        plt.title('Audio signal spectrum',fontsize=16)
+        plt.ylabel('Amplitude [dB]')
+        plt.axis([0,20000,0,self.spec.max()+10])
+        plt.grid()
+    
 
     def set_third_oct(self, spec_third, third_axis):
         """ Load a steady signal third-octave band spectrum and its corresponding 
@@ -175,11 +204,11 @@ class Audio_signal:
              'dB' or 'dBA' to apply A-weighting
                                
         """
-        plt.figure()
+        plt.figure(num='Third-octave spectrum')
         
         if unit =='dB':
             plt.step(self.freq, self.spec_third,color='cadetblue')
-            plt.title('Third octave spectrum')
+            plt.title('Third octave spectrum',fontsize=16)
             plt.xscale('log')
             plt.xlabel("Frequency [Hz]")
             plt.ylabel("Amplitude, [dB re. 2.10^-5 Pa]")
@@ -187,7 +216,7 @@ class Audio_signal:
             self.spec_dBA = A_weighting(self.spec_third)
             plt.step(self.freq, self.spec_dBA,color='cadetblue')
             plt.xscale('log')
-            plt.title('A-weighted third-octave spectrum')
+            plt.title('A-weighted third-octave spectrum',fontsize=16)
             plt.xlabel('Frequency [Hz]')
             plt.ylabel('Amplitude [dBA]')
         plt.show()
@@ -208,7 +237,7 @@ class Audio_signal:
     def plot_loudness(self):
         """ Specific band loudness plot.  """
 
-        plt.figure()
+        plt.figure(num='Loudness')
         if self.is_stationary == True:                            
             fig, ax = plt.subplots(constrained_layout=True)
             x = np.linspace(0.1, 24, int(24 / 0.1))   
@@ -216,7 +245,7 @@ class Audio_signal:
             ax.plot(x, self.N_specific,color='cadetblue')
             ax.set_xlabel('Bark scale')
             ax.set_ylabel('Loudness [sones]')
-            ax.set_title('Specific loudness')
+            ax.set_title('Specific loudness',fontsize=16)
             secax = ax.secondary_xaxis('top', functions=(bark2freq, freq2bark))
             plt.setp(secax.get_xticklabels(), rotation=60, ha="right")
             secax.set_xticks(np.array([25,50,100,200,400,800,1600,3150,6300,12500]))
@@ -227,31 +256,37 @@ class Audio_signal:
             plt.plot(time, self.N,color='cadetblue')
             plt.xlabel("Time [s]")
             plt.ylabel("Loudness, [sone]")
-            plt.title("Loudness over time")
+            plt.title("Loudness over time",fontsize=16)
         plt.show()
             
      
-    def comp_roughness(self):
-        """  Acoustic roughness calculation according to the Daniel and Weber method. """
+    def comp_roughness(self, overlap):
+        """  Acoustic roughness calculation according to the Daniel and Weber method. 
+        
+        Parameter:
+        ----------
+        overlap: float
+                overlapping coefficient for the time windows calculation
+        """
         
         if self.fs != 48000:
                 self.fs, self.signal = signal_resample(self.signal,self.fs)
                 print("Signal resampled to 48 kHz to allow calculation.")
-        self.R, self.R_specific = calc_roughness(self.signal,self.fs)
+        self.R, self.R_specific = calc_roughness(self.signal,self.fs, overlap)
         
         
    
     def plot_roughness(self):
         """ Roughness over time plot.  """
                
-        fig, ax = plt.subplots(constrained_layout=True)
+        fig, ax = plt.subplots(constrained_layout=True,num='Roughness')
         time = np.linspace(0,0.2*(self.R.size - 1)/2,self.R.size)    
         plt.xticks(np.arange(0,int(0.2*(self.R.size - 1)),1))        
         plt.plot(time, self.R,color='cadetblue')
         plt.ylim( 0, max(self.R)+ max(self.R)*0.1)
         plt.xlabel("Time [s]")
         plt.ylabel("Roughness, [Asper]")
-        plt.title("Roughness over time")
+        plt.title("Roughness over time",fontsize=16)
         plt.grid()
             
             
@@ -277,20 +312,19 @@ class Audio_signal:
 #         """ Sharpness plotting """
 
 #         if self.is_stationary == False:
-#             plt.figure()                
+#             plt.figure(num='Roughness')                
 #             time = np.linspace(0,0.002*(self.N.size - 1),self.N.size)            
 #             #plt.plot(time, self.S_aures, label='Aures', color='red')
 #             plt.plot(time, self.S_din, label='DIN', color='cadetblue')
 #             #plt.plot(time, self.S_bismarck, label='Von Bismarck', color='orange')
 #             plt.xlabel("Time [s]")
 #             plt.ylabel("Sharpness, [acum]")
-#             plt.title("Sharpness over time")
+#             plt.title("Sharpness over time",fontsize=16)
 #             #plt.legend()
 #             plt.grid()
 
 
- 
-# if __name__ == "__main__":
+
 # ##test : loudness calculation from a third_octave band spectrum (steady signal)
 #       test_signal_1 = np.array([
 #     -60, -60, 78, 79, 89, 72, 80, 89, 75, 87, 85, 79, 86, 80, 71, 70, 72, 71,
