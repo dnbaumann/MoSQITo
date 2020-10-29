@@ -2,21 +2,23 @@
 """
 Created on Wed Sep 16 14:29:47 2020
 
-@author: pc
+@author: wantysal
 """
 import sys
 sys.path.append('../../..')
 
+# Standard library import
 import numpy as np
-from numpy.fft import fft
-from math import ceil
+from numpy.fft import fft, fftfreq
+from math import floor
 
+# Local imports
 from mosqito.functions.generic.conversion_bark2frequency import freq2bark
 from mosqito.functions.generic.a0_zwicker import a0_definition
 from mosqito.functions.roughness.H_function import H_function
 from mosqito.functions.roughness.specific_roughness import calc_spec_roughness
 
-def calc_roughness(signal, fs):
+def calc_roughness(signal, fs, overlap):
     """ Roughness calculation of a signal sampled at 48kHz.
 
     The code is based on the algorithm described in "Psychoacoustical roughness:
@@ -31,6 +33,8 @@ def calc_roughness(signal, fs):
              signal amplitude values along time
     fs : integer
         sampling frequency
+    overlap : float
+              overlapping coefficient for the time windows of 200ms 
 
     Outputs
     -------
@@ -50,35 +54,32 @@ def calc_roughness(signal, fs):
 
     # Number of sample points within each frame
     N = int(0.2*fs)
-    
-    # Adaptation of the signal duration to the time resolution
-    if (len(signal)/fs)%0.2 != 0 :
-        signal = np.concatenate((signal,np.zeros((ceil(len(signal)/N) * N ) - len(signal))))   
+      
     
     # Signal cutting according to the time resolution of 0.2s
-    # with an overlap of 0.1s (number of rows = number of frames)
+    # with the given overlap proportion (number of rows = number of frames)
 
-    row = int(2*signal.size/N)-1    
+    row = floor(signal.size/((1-overlap)*N))-1  
     reshaped_signal = np.zeros((row,N))   
     
-    for i_row in range(row):
-        reshaped_signal[i_row,:] = signal[int(i_row*(N/2)):int(i_row*(N/2)+N)]       
+    
+    for i_row in range(row):        
+        reshaped_signal[i_row,:] = signal[i_row*int(N*(1-overlap)):i_row*int(N*(1-overlap))+N]       
     
 # Signal spectrum is created with a Blackman window for each 200ms time period
     fourier = fft(reshaped_signal* np.blackman(N))
     phase = np.angle(fourier)
-    spectrum = np.absolute(fourier/N)[:,0:int(N/2)]
-    spectrum = 20 * np.log10(spectrum/0.00002)
+    spectrum = np.absolute(fourier/(int(N/2)*0.00002))[:,0:int(N/2)]
+    spectrum = 20 * np.log10(spectrum)
 
     # Frequency axis    
-    freq_axis = np.arange(int(N/2))*fs/N
+    freq_axis = np.linspace(0,int(fs/2),spectrum.shape[1])
     
     # Conversion of the frequencies into bark values
     bark_axis = freq2bark(freq_axis)
     
 # Application of the Zwicker a0 factor representing the transmission between 
 # free field and hearing system
-  
     A0 = a0_definition(bark_axis)
     spectrum = spectrum + A0
     			
@@ -94,7 +95,7 @@ def calc_roughness(signal, fs):
         
     R_spec = np.zeros((spectrum.shape[0],47))
     R = np.zeros((spectrum.shape[0]))
-    
+
     for i_time in range (spectrum.shape[0]):
         R_spec[i_time,:] = calc_spec_roughness(spectrum[i_time,:], phase[i_time,:],freq_axis,bark_axis,H)
         R[i_time] = 0.25 * sum(R_spec[i_time,:])

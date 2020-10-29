@@ -11,19 +11,10 @@ import numpy as np
 def H_function(n):
     """ Weighting functions Hi definition for each 1-bark-wide interval i 
     
-    Parameters
-    ------------
-    N : integer
-        excitation envelope function size
-        
-    Outputs
-    -------
-    H : numpy.array
-        47 weighting functions Hi
-    
-    
-        H2, H16 and H42 are given, the others are derived from them 
-        in the following way:
+    The code is based on the article "Psychoacoustical roughness:
+    implementation of an optimized model" by Daniel and Weber in 1997.
+    H2, H16 and H42 are given (figure 2), the others are derived from them
+    in the following way:
         for i = 1,2, ... ,4 (Zi = 0.5,1, ... ,2 Bark)
             HI = H2 = H3 = H4
         for i = 6,8, ... , 16 (Zi = 3,4, ... ,8 Bark) :
@@ -36,11 +27,21 @@ def H_function(n):
             Hi is linearly interpolated between H20 and H42
         for i = 43,44, ... ,47 (Zi = 21.5,22, ... ,23.5 Bark):
             Hi = H42.
-               
+    
+    Parameters
+    ------------
+    n : integer
+        excitation envelope function size
+        
+    Outputs
+    -------
+    H : numpy.array
+        47 weighting functions Hi
+                
     """
     
     
-    H = np.zeros((47,n))
+    H = np.zeros((47,2*n))
 
     
     # H2, H16 and H42 are given
@@ -58,7 +59,7 @@ def H_function(n):
  0.09094134, 0.08423818, 0.07684341, 0.06858399, 0.06032456, 0.05206513,
  0.04380571, 0.03554628, 0.02767966, 0.02118801, 0.01469636, 0.01276445,
  0.00805139, 0.00291221, 0.00171306, 0])    
-    H[1,:] = np.concatenate((H2,np.zeros(n-H2.size)))
+    H[1,0:n] = np.concatenate((H2,np.zeros(n-H2.size)))
 
 
     H16 = np.array([0,
@@ -77,7 +78,7 @@ def H_function(n):
 0.0737033,0.0700976,0.0664918,0.062886,0.0592803,0.0556745,0.0520687,0.048463,
 0.0448572,0.0412514,0.0376457,0.0340399,0.0304181,0.026668,0.0229178,0.0191677,
 0.0154176,0.0116674,0.00791728,0  ])    
-    H[15,:] = np.concatenate((H16,np.zeros(n-H16.size)))
+    H[15,0:n] = np.concatenate((H16,np.zeros(n-H16.size)))
         
     
     H42 = np.array([0,
@@ -96,13 +97,13 @@ def H_function(n):
 0.0686187,0.0650418,0.0614649,0.057888,0.0543111,0.0507342,0.0471573,0.0435804,
 0.0400035,0.0364266,0.0328497,0.0292728,0.0256959,0.0225707,0.0194455,0.0163203,
 0.0131952,0.01007,0 ])
-    H[41,:] = np.concatenate((H42,np.zeros(n-H42.size)))
+    H[41,0:n] = np.concatenate((H42,np.zeros(n-H42.size)))
 
     # According to the article we have :       
 
-    H[0,:] = H[2,:] = H[3,:] = H[1,:]
-    H[14,:] = H[16,:] = H[17,:] = H[18,:] = H[19,:] = H[15,:]
-    H[40,:] = H[42,:] = H[43,:] = H[44,:] = H[45,:] = H[46,:] = H[41,:]
+    H[0,0:n] = H[2,0:n] = H[3,0:n] = H[1,0:n]
+    H[14,0:n] = H[16,0:n] = H[17,0:n] = H[18,0:n] = H[19,0:n] = H[15,0:n]
+    H[40,0:n] = H[42,0:n] = H[43,0:n] = H[44,0:n] = H[45,0:n] = H[46,0:n] = H[41,0:n]
 
     # The others weighting functions are linearly interpolated:
         
@@ -116,11 +117,11 @@ def H_function(n):
         H[11,i] = np.interp(12,xp,yp)
         H[13,i] = np.interp(14,xp,yp)
         
-    H[4,:] = H[5,:]
-    H[6,:] = H[7,:]
-    H[8,:] = H[9,:]
-    H[10,:] = H[11,:]
-    H[12,:] = H[13,:]
+    H[4,0:n] = H[5,0:n]
+    H[6,0:n] = H[7,0:n]
+    H[8,0:n] = H[9,0:n]
+    H[10,0:n] = H[11,0:n]
+    H[12,0:n] = H[13,0:n]
     
     #between H20 and H42
     xp = [20,42]
@@ -137,15 +138,20 @@ def H_function(n):
         H[37,i] = np.interp(38,xp,yp)
         H[39,i] = np.interp(40,xp,yp)
     
-    H[20,:] = H[21,:]
-    H[22,:] = H[23,:]
-    H[24,:] = H[25,:]
-    H[26,:] = H[27,:]
-    H[28,:] = H[29,:]
-    H[30,:] = H[31,:]
-    H[32,:] = H[33,:]
-    H[34,:] = H[35,:]
-    H[36,:] = H[37,:]
-    H[38,:] = H[39,:] 
+    H[20,0:n] = H[21,0:n]
+    H[22,0:n] = H[23,0:n]
+    H[24,0:n] = H[25,0:n]
+    H[26,0:n] = H[27,0:n]
+    H[28,0:n] = H[29,0:n]
+    H[30,0:n] = H[31,0:n]
+    H[32,0:n] = H[33,0:n]
+    H[34,0:n] = H[35,0:n]
+    H[36,0:n] = H[37,0:n]
+    H[38,0:n] = H[39,0:n] 
+    
+
+    for i in range(0,47):
+        for i_freq in range(0,n): 
+            H[i,2*n-i_freq-1] = H[i,i_freq]
     
     return H    

@@ -2,7 +2,7 @@
 """
 Created on Tue Sep 29 14:30:31 2020
 
-@author: pc
+@author: wantysal
 """
 
 
@@ -11,6 +11,8 @@ import numpy as np
 def spec_excitation(spectrum, freq_axis, bark_axis):
     """ Transformation of the frame spectrum into specific excitations spectra
     
+The code is based on the algorithm described in "Psychoacoustical roughness:
+implementation of an optimized model" by Daniel and Weber in 1997.    
 According to the article, the excitation level can be converted into triangular 
 excitation patterns : the level is set to the corresponding fourier component,
 and the excitation decrease slopes are chosen in accordance with the proposal 
@@ -41,13 +43,22 @@ intervals with equally spaced centres  zi = 0.5*i Bark (i=1,2,...,47)
    
 # Intervals center frequencies
     center_freq = 0.5 * np.arange(1,48,1)
-          
+     
   
-# Threshold in quiet in each channel:
-# (omission of the contributions whose level is lower than LTQ)
-    LTQ = np.array([30.5,18.5,18.5,12.5,12.5,8.5,7.5,7.5,6.5,6.5,5.5,5.5,4.5,4.5,4.5,
-                    3.5,3.5,3.5,3.5,3.5,3.5,3.5,3.5,3.5,3.5,4.6,4.6,4.6,4.6,6.2,6.2,6.2,
-                    8.4,8.4,8.4,8.6,8.6,7,7,7,4.5,4.5,1,1,0,0,0])
+# Threshold in quiet in each channel :
+# the values come from ISO 532 table A.6 with linear interpolation according to each interval
+# center frequency in hertz, with Zwicker's a0 weighting
+
+    LTQ = np.array([30.        , 18.        , 18.        , 12.        , 12.        ,
+                    8.9       ,  7.6       ,  7.        ,  6.5       ,  5.9       ,
+                    5.5       ,  5.        ,  4.6       ,  4.2       ,  3.8       ,
+                    3.4       ,  3.        ,  2.9963687 ,  2.98664993,  2.93367954,
+                    2.71872409,  2.40949609,  2.1196847 ,  1.60503951,  0.96523795,
+                    0.42980591, -0.35100434, -1.07833441, -1.9024154 , -2.57466856,
+                   -3.3401031 , -3.9066719 , -3.95088025, -3.96479685, -3.3361112 ,
+                   -2.3777828 , -0.82786308,  0.89872916,  2.65342154,  4.39706449,
+                    5.73323601,  6.63235447,  7.84704681,  9.72993295, 12.51326767,
+                   16.91600964, 24.49143975])
     
 # Specific excitation spectra : each frequency component is related to 
 # its excitation spectrum  
@@ -64,7 +75,7 @@ intervals with equally spaced centres  zi = 0.5*i Bark (i=1,2,...,47)
     #     contribution to the specific excitation =  S2(Zi - 0.5 Bark)
     # If  z(f) falls into the interval [zi - 0.5; zi + 0.5] : 
     #     contribution to the specific excitation =  L 
-
+    # The contributions whose level is lower than LTQ are omitted
 
     for i in range(0,47):
         for i_freq in range(0,spectrum.size):
@@ -76,11 +87,11 @@ intervals with equally spaced centres  zi = 0.5*i Bark (i=1,2,...,47)
                     spec_excitation_spectrum[i,i_freq] = S1
                         
             elif bark_axis[i_freq]<=(center_freq[i]-0.5):
-                if freq_axis[i_freq] != 0:
-                    S2 = L + (-24 - (230/freq_axis[i_freq] ) + 0.2 * L ) * ( center_freq[i]-0.5 - bark_axis[i_freq])
+                if freq_axis[i_freq]!= 0:
+                    S2 = L + (-24 - (230/freq_axis[i_freq]) + 0.2 * L) * (center_freq[i]-0.5 - bark_axis[i_freq])
                     if S2 > LTQ[i]:
                         spec_excitation_spectrum[i,i_freq] = S2
-            else :
+            elif bark_axis[i_freq]<(center_freq[i]+0.5) and bark_axis[i_freq]>(center_freq[i]-0.5) :
                 if L > LTQ[i]:
                     spec_excitation_spectrum[i,i_freq] = L
                     
