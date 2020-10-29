@@ -2,15 +2,17 @@
 """
 Created on Mon Oct  5 10:47:56 2020
 
-@author: pc
+@author: wantysal
 """
 import numpy as np
 
 def a0_definition(bark_axis):
     """ Zwicker's a0 coefficients representing the transmission between
-    free field and hearing system 
+    free field and the peripheral hearing system.
     
-    The coefficients are interpolated from given values.
+    The coefficients meaning is described in detail in E. Zwicker, H. Fastl:
+    Psychoacoustics. Springer, Berlin, Heidelberg, 1990.
+    The coefficients are interpolated from the values given in figure 8.18.
     
     Parameter
     ---------
@@ -42,6 +44,7 @@ def a0_definition(bark_axis):
     
     A0 = np.interp(bark_axis,xp,yp)
     
+    # plot
     
     # plt.figure(figsize=(12,4))
     # plt.plot(bark_axis,A0,color='blue')
