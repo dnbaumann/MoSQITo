@@ -5,7 +5,6 @@ Created on Thu Sep 10 12:22:23 2020
 @author: pc
 """
 import numpy as np
-from scipy.integrate import simps
 
 def calc_sharpness_aures(N, N_specific, is_stationary):
     """ Sharpness calculation
@@ -21,26 +20,33 @@ def calc_sharpness_aures(N, N_specific, is_stationary):
         specific critical bands loudness
     is_stationary : boolean
         indicates if the signal is stationary or time-varying
-    time : np.array
-        time axis
 
     Outputs
     -------
     S : sharpness
     """
+    
+    # Bark axis
     z = np.linspace(0.1, 24, int(24 / 0.1))   
+    
     if is_stationary == True :
-        f = np.zeros((z.size))
-        f = N_specific * 0.078 * (np.exp(0.171 * z)) * ( N / np.log(N * 0.05 + 1)) 
-        S = (0.11 / N) * simps (f,z)   
-        print("Aures sharpness:",str(S),"acum")
+        if N == 0:
+            S = 0
+        else:
+            # weighting function depending on the loudness
+            gA = np.zeros((z.size))
+            gA = 0.078 * (np.exp(0.171 * z)/z) * (N/np.log(N * 0.05 + 1))
+            S = 0.11 * sum( N_specific * gA * z * 0.1) / N
+            print("Aures sharpness:",str(S),"acum")
     else :
         S = np.zeros((N.size))
-        f = np.zeros((z.size,N.size))
+        gA = np.zeros((z.size,N.size))
         for t in range(N.size):
-            if N[t] >= 1:
-                f[:,t] += N_specific[:,t]  * 0.078 * (np.exp(0.171 * z)/z) * ( N[t] / np.log(N[t] * 0.05 + 1))  *z  
-                S[t] = (0.11 / N[t]) * simps (f[:,t],z)
+            if N[t] >= 0.1:
+                # weighting function depending on the loudness
+                gA[:,t] = 0.078 * (np.exp(0.171 * z )/z)* (N[t]/np.log(N[t] * 0.05 + 1))
+                S[t] = 0.11 * sum(N_specific[:,t] * gA[:,t] * z * 0.1) / np.log(N[t] * 0.05 + 1)
+                           
     return S
 
 
