@@ -28,6 +28,8 @@ from mosqito.functions.roughness.roughness import calc_roughness
 from mosqito.functions.sharpness.sharpness_aures import calc_sharpness_aures
 from mosqito.functions.sharpness.sharpness_din import calc_sharpness_din
 from mosqito.functions.sharpness.sharpness_bismarck import calc_sharpness_bismarck
+from mosqito.functions.sharpness.sharpness_fastl import calc_sharpness_fastl
+
 
 # set matplotlib font
 plt.rcParams['font.sans-serif'] = "MC Gothic"
@@ -63,6 +65,7 @@ class Audio_signal:
         self.S_aures = np.ndarray((1))
         self.S_din = np.ndarray((1))
         self.S_bismarck = np.ndarray((1))
+        self.S_fastl = np.ndarray((1))
         self.R = float()
         
         
@@ -340,7 +343,7 @@ class Audio_signal:
             
         """
         # Third octave spectrum calculation
-        audio.comp_third()
+        # audio.comp_third()
         
         
         # Overall level calculation for a steady signal
@@ -420,7 +423,7 @@ class Audio_signal:
                 overlapping coefficient for the time windows calculation
         """
                 
-        self.R, self.R_specific = calc_roughness(self.signal,self.fs, overlap)
+        self.R = calc_roughness(self.signal,self.fs, overlap,self.level_dB)
         
         
    
@@ -454,6 +457,7 @@ class Audio_signal:
         self.S_aures = calc_sharpness_aures(self.N, self.N_specific, self.is_stationary )              
         self.S_din = calc_sharpness_din(self.N, self.N_specific, self.is_stationary)
         self.S_bismarck = calc_sharpness_bismarck(self.N, self.N_specific, self.is_stationary)        
+        self.S_fastl = calc_sharpness_fastl(self.N, self.N_specific, self.is_stationary)
         
     def plot_sharpness(self):
         """ Sharpness plotting """
@@ -463,7 +467,8 @@ class Audio_signal:
             time = np.linspace(0,0.002*(self.N.size - 1),self.N.size)            
             plt.plot(time, self.S_aures, label='Aures', color='#0069A1')
             plt.plot(time, self.S_din, label='DIN', color='#69C3C5')
-            plt.plot(time, self.S_bismarck, label='Von Bismarck', color='#E69F00')
+            plt.plot(time, self.S_bismarck, label='Von Bismarck', color='#E6AF00')
+            plt.plot(time, self.S_fastl, label='Fastl and Zwicker', color='#BBCF1C')
             plt.xlabel("Time [s]")
             plt.ylabel("Sharpness, [acum]")
             plt.title("Sharpness over time",fontsize=16)
