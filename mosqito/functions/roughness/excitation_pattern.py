@@ -1,70 +1,40 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Sep 29 14:30:31 2020
+Created on Fri Nov  6 15:39:05 2020
 
 @author: wantysal
 """
-
-
+# Standard library import
 import numpy as np
 
-def spec_excitation(spectrum, freq_axis, bark_axis):
-    """ Transformation of the frame spectrum into specific excitations spectra
+# Local import
+from mosqito.functions.generic.LTQ import LTQ
+from mosqito.functions.generic.a0_zwicker import a0_definition
+from mosqito.functions.generic.conversion_amplitude2dB import db2amp
+
+
+def excitation_pattern(N,sizL,fourier,module,LdB,low_limit, audible_index, audible_freq_axis,audible_bark_axis):
+       
+    # Terhardt's slopes definition
+    # lower slope [dB/Bark]
+    S1			=	-27
+    S2			=	np.zeros((sizL))
+    for l in np.arange(0,sizL,1):
+        # upper slope [dB/Bark] 
+        steep	=	-24-(230/audible_freq_axis[audible_index[l]])+(0.2*LdB[audible_index[l]])
+        if steep<0:
+            S2[l]=steep
+        
+    # Initialization    
+    whichZ	    =	np.zeros((2,sizL),dtype = int)
+    qd			=	np.arange(0,sizL,1)
     
-The code is based on the algorithm described in "Psychoacoustical roughness:
-implementation of an optimized model" by Daniel and Weber in 1997.    
-According to the article, the excitation level can be converted into triangular 
-excitation patterns : the level is set to the corresponding fourier component,
-and the excitation decrease slopes are chosen in accordance with the proposal 
-of Terhardt :
-    S1(f) = -27 dB/Bark for the lower slopes,
-    S2(f) = -24-(230/f)+0.2*L dB/Bark for the upper slopes
-(f, L respectively the frequency and level of the spectral component concerned)
-
-From that are created specific excitation spectra within 47 overlapping 1-Bark-wide 
-intervals with equally spaced centres  zi = 0.5*i Bark (i=1,2,...,47)
-
-                                
-    Parameters
-    ------------
-    spectrum: numpy.array
-              signal spectrum of the 200ms frame concerned
-    freq_axis: numpy.array
-              frequency axis in Hertz
-    bark_axis: numpy.array
-              frequency axis in Bark
-
-    Output
-    ---------
-    spec_excitation_spectrum : numpy.array
-                     Specific excitation spectrum within 47 1-bark-wide intervals
+    # Lower limit of the bark frequency bin corresponding to each audibe frequency component 
+    whichZ[0,:]	=	np.floor(2*audible_bark_axis[audible_index[qd]])
+    # Upper limit of the bark frequency bin corresponding to each audibe frequency component 
+    whichZ[1,:]	=	np.ceil(2*audible_bark_axis[audible_index[qd]])
     
-    """
-   
-# Intervals center frequencies
-    center_freq = 0.5 * np.arange(1,48,1)
-     
-  
-# Threshold in quiet in each channel :
-# the values come from ISO 532 table A.6 with linear interpolation according to each interval
-# center frequency in hertz, with Zwicker's a0 weighting
-
-    LTQ = np.array([30.        , 18.        , 18.        , 12.        , 12.        ,
-                    8.9       ,  7.6       ,  7.        ,  6.5       ,  5.9       ,
-                    5.5       ,  5.        ,  4.6       ,  4.2       ,  3.8       ,
-                    3.4       ,  3.        ,  2.9963687 ,  2.98664993,  2.93367954,
-                    2.71872409,  2.40949609,  2.1196847 ,  1.60503951,  0.96523795,
-                    0.42980591, -0.35100434, -1.07833441, -1.9024154 , -2.57466856,
-                   -3.3401031 , -3.9066719 , -3.95088025, -3.96479685, -3.3361112 ,
-                   -2.3777828 , -0.82786308,  0.89872916,  2.65342154,  4.39706449,
-                    5.73323601,  6.63235447,  7.84704681,  9.72993295, 12.51326767,
-                   16.91600964, 24.49143975])
     
-# Specific excitation spectra : each frequency component is related to 
-# its excitation spectrum  
-   
-    spec_excitation_spectrum = np.zeros((47,2*spectrum.size))
-
     # The excitation contributions in each interval [zi - 0.5, zi + 0.5] 
     # are linearly superimposed.
     # The contribution of a spectral component in each interval is:    
@@ -76,26 +46,50 @@ intervals with equally spaced centres  zi = 0.5*i Bark (i=1,2,...,47)
     # If  z(f) falls into the interval [zi - 0.5; zi + 0.5] : 
     #     contribution to the specific excitation =  L 
     # The contributions whose level is lower than LTQ are omitted
+    
+    # The linear contributions different from 1 are divided by the absolute value
+    # of the original fft and then multiplied by the fft to reconstruct a complete result
+    # with the original phases and an absolute value weighted according to the triangular scheme
 
-    for i in range(0,47):
-        for i_freq in range(0,spectrum.size):
-            L = spectrum[i_freq]
-                
-            if bark_axis[i_freq]>=(center_freq[i]+0.5):
-                S1 = L - 27 * ( bark_axis[i_freq] - center_freq[i]+0.5 )
-                if S1 > LTQ[i]:
-                    spec_excitation_spectrum[i,i_freq] = S1
-                        
-            elif bark_axis[i_freq]<=(center_freq[i]-0.5):
-                if freq_axis[i_freq]!= 0:
-                    S2 = L + (-24 - (230/freq_axis[i_freq]) + 0.2 * L) * (center_freq[i]-0.5 - bark_axis[i_freq])
-                    if S2 > LTQ[i]:
-                        spec_excitation_spectrum[i,i_freq] = S2
-            elif bark_axis[i_freq]<(center_freq[i]+0.5) and bark_axis[i_freq]>(center_freq[i]-0.5) :
-                if L > LTQ[i]:
-                    spec_excitation_spectrum[i,i_freq] = L
+    Slopes      = np.zeros((sizL,47))
+    
+    for l in np.arange(0,sizL,1):
+        level =	LdB[audible_index[l]]
+        bark = audible_bark_axis[audible_index[l]]
+        
+        for k in np.arange(0,whichZ[0,l],1):
+            Stemp	=	(S1*(bark-(k*0.5)))+level
+            if Stemp > LTQ(k*0.5) + a0_definition(k*0.5):
+                Slopes[l,k]=db2amp(Stemp)*N
+        
+        for k in np.arange(int(whichZ[1,l]),47,1):
+            Stemp	=	(S2[l]*((k*0.5)-bark))+level
+            if Stemp > LTQ(k*0.5) + a0_definition(k*0.5):
+                Slopes[l,k]=db2amp(Stemp)*N
+    
                     
-            # symmetry in anticipation of a Fourier inverse transform
-            spec_excitation_spectrum[i,2*spectrum.size-i_freq-1] = spec_excitation_spectrum[i,i_freq]
-                    
-    return spec_excitation_spectrum
+    ExcAmp     =	np.zeros((47,sizL))  
+    etmp = np.zeros((47,N),dtype=complex)
+    
+    for k in range (1,46,1):        
+        for l in np.arange(0,sizL,1):
+            # index of the component on the audible axis
+            N1tmp = audible_index[l]
+            # index of the component on the full axis
+            N2tmp = N1tmp + low_limit
+            # the component belongs to the bark window
+            if whichZ[0,l] == k  :
+                ExcAmp[k,l]	=	1
+            # the component is higher than the bark window
+            elif whichZ[1,l]>k:
+                ExcAmp[k,l]	=	Slopes[l,k+1]/module[N1tmp]
+            # the component is lower than the window
+            elif whichZ[0,l]<k:
+                ExcAmp[k,l]   =	Slopes[l,k-1]/module[N1tmp]
+            
+            # reconstruction of the spectrum 
+            etmp[k,N2tmp]	=	ExcAmp[k,l]*fourier[N2tmp]
+            # symmetrization in anticipation of subsequent IFFT
+            etmp[k,N-N2tmp] = etmp[k,N2tmp]
+            
+    return etmp

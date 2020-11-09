@@ -1,24 +1,27 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Sep 16 14:29:47 2020
+Created on Mon Nov  2 10:34:04 2020
 
 @author: wantysal
 """
+
 import sys
 sys.path.append('../../..')
 
-# Standard library import
+# Standard imports
 import numpy as np
-from numpy.fft import fft, fftfreq
-from math import floor
+import math
+from numpy.fft import fft
+
 
 # Local imports
-from mosqito.functions.generic.conversion_bark2frequency import freq2bark
-from mosqito.functions.generic.a0_zwicker import a0_definition
+from mosqito.functions.roughness.roughness_main_calc import roughness_main_calc
+from mosqito.functions.roughness.weighting_function_gzi import gzi_definition
 from mosqito.functions.roughness.H_function import H_function
-from mosqito.functions.roughness.specific_roughness import calc_spec_roughness
+from mosqito.functions.generic.conversion_bark2frequency import freq2bark
+from mosqito.functions.generic.a0_psy import a0tab
 
-def calc_roughness(signal, fs, overlap):
+def calc_roughness(signal,fs,overlap,db):
     """ Roughness calculation of a signal sampled at 48kHz.
 
     The code is based on the algorithm described in "Psychoacoustical roughness:
@@ -43,62 +46,56 @@ def calc_roughness(signal, fs, overlap):
     R_spec : numpy.array
            specific roughness value within each critical band    
     
-    """
-  
+    """            
 
-# Sampling frequency check
-    if fs != 48000:
-        raise ValueError("ERROR: Sampling frequency must be 48 kHz.")
+
 
 #  Creation of overlapping 200 ms frames of the sampled input signal 
 
     # Number of sample points within each frame
     N = int(0.2*fs)
-      
+    
+    
+    # Calibration factor to set the signal level at 60 dB
     
     # Signal cutting according to the time resolution of 0.2s
     # with the given overlap proportion (number of rows = number of frames)
-
-    row = floor(signal.size/((1-overlap)*N))-1  
-    reshaped_signal = np.zeros((row,N))   
-    
-    
+    row = math.floor(signal.size/((1-overlap)*N))-1  
+    reshaped_signal = np.zeros((row,N))     
     for i_row in range(row):        
-        reshaped_signal[i_row,:] = signal[i_row*int(N*(1-overlap)):i_row*int(N*(1-overlap))+N]       
+        reshaped_signal[i_row,:] = signal[i_row*int(N*(1-overlap)):i_row*int(N*(1-overlap))+N]      
     
-# Signal spectrum is created with a Blackman window for each 200ms time period
-    fourier = fft(reshaped_signal* np.blackman(N))
-    phase = np.angle(fourier)
-    spectrum = np.absolute(fourier/(int(N/2)*0.00002))[:,0:int(N/2)]
-    spectrum = 20 * np.log10(spectrum)
+    # Creation of the spectrum by FFT with a Blackman window
+    fourier = fft(reshaped_signal* np.blackman(N))/(np.sum(np.blackman(N)))
 
-    # Frequency axis    
-    freq_axis = np.linspace(0,int(fs/2),spectrum.shape[1])
+    # Zwicker transmission factor
     
-    # Conversion of the frequencies into bark values
-    bark_axis = freq2bark(freq_axis)
+    a0 = np.power(10,0.05*a0tab(freq2bark(np.concatenate((np.arange(0,4800,1)*fs/N,np.arange(4800,0,-1)*fs/N)))))
+    fourier = fourier * a0
     
-# Application of the Zwicker a0 factor representing the transmission between 
-# free field and hearing system
-    A0 = a0_definition(bark_axis)
-    spectrum = spectrum + A0
-    			
-
-
-### The roughness calculation is done within each time frame to compute
-### the values along time : 
-    print('Roughness is being calculated...')
+    # Definition of the frequency frame of interest
+    # lower limit of the hearing domain is 20Hz
+    low_limit	= round(20*N/fs)
+    # upper limit of the hearing domain is 2 kHz
+    high_limit	= int(20000*N/fs)+1
     
-    # H weighting functions definition
+    # Audible frequencies axis
+    audible_freq_index =	np.arange(low_limit,high_limit,1)
+    audible_freq_axis	=	(audible_freq_index)*fs/N
+    audible_bark_axis = freq2bark(audible_freq_axis)
+    
+    
+    
+    # Weighting functions initialization
+    # modelization of the band pass characteristics of roughness on frequency modulation
     H = H_function(int(N/2))
-    
-        
-    R_spec = np.zeros((spectrum.shape[0],47))
-    R = np.zeros((spectrum.shape[0]))
+    # Aures modulation depth weighting function
+    center_freq = np.arange(1,48,1)/2
+    gzi = gzi_definition(center_freq)
 
-    for i_time in range (spectrum.shape[0]):
-        R_spec[i_time,:] = calc_spec_roughness(spectrum[i_time,:], phase[i_time,:],freq_axis,bark_axis,H)
-        R[i_time] = 0.25 * sum(R_spec[i_time,:])
+    R = np.zeros((row))
+    print('Roughness is being calculated')
+    for i_time in range (row):
+        R[i_time] =	roughness_main_calc(fourier[i_time,:],H,gzi, N, fs,low_limit,audible_freq_index,audible_freq_axis,audible_bark_axis)
         
-
-    return R, R_spec
+    return R
